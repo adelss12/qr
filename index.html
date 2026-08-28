@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>صانع QR</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Tahoma, Arial, sans-serif;
+      background: linear-gradient(135deg, #eef7ff, #f8fbff);
+      color: #1f2937;
+    }
+
+    header {
+      padding: 30px 20px;
+      text-align: center;
+      color: white;
+      background: linear-gradient(135deg, #0f766e, #0891b2);
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+
+    main {
+      width: min(950px, 94%);
+      margin: 30px auto;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+    }
+
+    .card {
+      padding: 24px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      box-shadow: 0 12px 30px rgba(15, 118, 110, 0.1);
+    }
+
+    .types {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .type-button {
+      padding: 13px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .type-button.active {
+      border-color: #0f766e;
+      background: #0f766e;
+      color: white;
+    }
+
+    .field {
+      margin-bottom: 17px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: bold;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 11px;
+      background: white;
+      font-family: inherit;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: #0891b2;
+      box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.12);
+    }
+
+    textarea {
+      min-height: 125px;
+      resize: vertical;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .generate-button,
+    .download-button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .generate-button {
+      background: linear-gradient(135deg, #0f766e, #0891b2);
+    }
+
+    .download-button {
+      margin-top: 16px;
+      background: #2563eb;
+    }
+
+    .preview {
+      min-height: 410px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    #qrcode {
+      min-height: 270px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #qrcode img,
+    #qrcode canvas {
+      max-width: 100%;
+      padding: 10px;
+      background: white;
+      border-radius: 12px;
+    }
+
+    .message {
+      margin: 14px 0 0;
+      color: #64748b;
+      line-height: 1.7;
+    }
+
+    .error {
+      color: #dc2626;
+    }
+
+    footer {
+      padding: 20px;
+      text-align: center;
+      color: #64748b;
+    }
+
+    @media (max-width: 760px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .types {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      header h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>صانع QR</h1>
+    <p>أنشئ رمز QR بسهولة للواي فاي والروابط والجوال والنصوص</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="types">
+        <button class="type-button active" data-type="wifi">📶 واي فاي</button>
+        <button class="type-button" data-type="url">🔗 رابط</button>
+        <button class="type-button" data-type="phone">📱 جوال</button>
+        <button class="type-button" data-type="text">📝 نص</button>
+      </div>
+
+      <div id="wifiFields">
+        <div class="field">
+          <label for="wifiName">اسم شبكة Wi-Fi</label>
+          <input id="wifiName" type="text" placeholder="اكتب اسم الشبكة">
+        </div>
+
+        <div class="field">
+          <label for="wifiPassword">كلمة المرور</label>
+          <input id="wifiPassword" type="password" placeholder="اكتب كلمة مرور الشبكة">
+        </div>
+
+        <div class="field">
+          <label for="wifiSecurity">نوع الحماية</label>
+          <select id="wifiSecurity">
+            <option value="WPA">WPA / WPA2 / WPA3</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">بدون كلمة مرور</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="urlFields" class="hidden">
+        <div class="field">
+          <label for="urlInput">رابط الموقع</label>
+          <input id="urlInput" type="url" placeholder="https://example.com">
+        </div>
+      </div>
+
+      <div id="phoneFields" class="hidden">
+  <div class="field">
+    <label for="phoneName">اسم صاحب الجوال</label>
+    <input id="phoneName" type="text" placeholder="مثال: أحمد محمد">
+  </div>
+
+  <div class="field">
+    <label for="phoneInput">رقم الجوال</label>
+    <input id="phoneInput" type="tel" placeholder="مثال: 0501234567">
+  </div>
+</div>
+
+      <div id="textFields" class="hidden">
+        <div class="field">
+          <label for="textInput">النص</label>
+          <textarea id="textInput" placeholder="اكتب النص الذي تريد تحويله إلى QR"></textarea>
+        </div>
+      </div>
+
+      <button class="generate-button" id="generateButton">
+        إنشاء رمز QR
+      </button>
+    </section>
+
+    <section class="card preview">
+      <div id="qrcode"></div>
+
+      <p id="message" class="message">
+        اختر نوع الرمز وأدخل البيانات، ثم اضغط على «إنشاء رمز QR».
+      </p>
+
+      <button id="downloadButton" class="download-button hidden">
+        تنزيل الرمز PNG
+      </button>
+    </section>
+  </main>
+
+  <footer>
+    صانع QR — جميع البيانات تُعالج داخل متصفحك
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.0/qrcode.min.js"></script>
+
+  <script>
+    const typeButtons = document.querySelectorAll(".type-button");
+    const fieldGroups = {
+      wifi: document.getElementById("wifiFields"),
+      url: document.getElementById("urlFields"),
+      phone: document.getElementById("phoneFields"),
+      text: document.getElementById("textFields")
+    };
+
+    const qrContainer = document.getElementById("qrcode");
+    const message = document.getElementById("message");
+    const downloadButton = document.getElementById("downloadButton");
+
+    let currentType = "wifi";
+
+    typeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        currentType = button.dataset.type;
+
+        typeButtons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+
+        Object.values(fieldGroups).forEach((group) => {
+          group.classList.add("hidden");
+        });
+
+        fieldGroups[currentType].classList.remove("hidden");
+
+        qrContainer.innerHTML = "";
+        downloadButton.classList.add("hidden");
+        message.classList.remove("error");
+        message.textContent = "أدخل البيانات ثم اضغط على «إنشاء رمز QR».";
+      });
+    });
+
+    function escapeWifiValue(value) {
+      return value.replace(/([\\;,":])/g, "\\$1");
+    }
+
+    function getQrContent() {
+      if (currentType === "wifi") {
+        const name = document.getElementById("wifiName").value.trim();
+        const password = document.getElementById("wifiPassword").value;
+        const security = document.getElementById("wifiSecurity").value;
+
+        if (!name) {
+          throw new Error("اكتب اسم شبكة Wi-Fi أولًا.");
+        }
+
+        if (security !== "nopass" && !password) {
+          throw new Error("اكتب كلمة مرور شبكة Wi-Fi.");
+        }
+
+        return `WIFI:T:${security};S:${escapeWifiValue(name)};P:${escapeWifiValue(password)};;`;
+      }
+
+      if (currentType === "url") {
+        let url = document.getElementById("urlInput").value.trim();
+
+        if (!url) {
+          throw new Error("اكتب رابط الموقع أولًا.");
+        }
+
+        if (!/^https?:\/\//i.test(url)) {
+          url = "https://" + url;
+        }
+
+        return url;
+      }
+
+      if (currentType === "phone") {
+  const name = document.getElementById("phoneName").value.trim();
+  const phone = document.getElementById("phoneInput").value.trim();
+
+  if (!name) {
+    throw new Error("اكتب اسم صاحب الجوال أولًا.");
+  }
+
+  if (!phone) {
+    throw new Error("اكتب رقم الجوال أولًا.");
+  }
+
+  const cleanPhone = phone.replace(/\s+/g, "");
+
+ return "MECARD:N:" + name + ";TEL:" + cleanPhone + ";;";
+}
+
+      const text = document.getElementById("textInput").value.trim();
+
+      if (!text) {
+        throw new Error("اكتب النص أولًا.");
+      }
+
+      return text;
+    }
+
+    document.getElementById("generateButton").addEventListener("click", () => {
+      qrContainer.innerHTML = "";
+      downloadButton.classList.add("hidden");
+      message.classList.remove("error");
+
+      try {
+        const content = getQrContent();
+
+        QRCode.toCanvas(content, {
+  width: 260,
+  margin: 2,
+  errorCorrectionLevel: "M",
+  color: {
+    dark: "#111827",
+    light: "#ffffff"
+  }
+}, function (error, canvas) {
+  if (error) {
+    message.textContent = "تعذر إنشاء الرمز، تحقق من البيانات.";
+    message.classList.add("error");
+    return;
+  }
+
+  qrContainer.appendChild(canvas);
+});
+
+        message.textContent = "تم إنشاء الرمز بنجاح. جرّبه بكاميرا الجوال.";
+        downloadButton.classList.remove("hidden");
+      } catch (error) {
+        message.textContent = error.message;
+        message.classList.add("error");
+      }
+    });
+
+    downloadButton.addEventListener("click", () => {
+      const canvas = qrContainer.querySelector("canvas");
+      const image = qrContainer.querySelector("img");
+
+      const link = document.createElement("a");
+      link.download = "QR-Code.png";
+      link.href = canvas ? canvas.toDataURL("image/png") : image.src;
+      link.click();
+    });
+  </script>
+
+</body>
+</html>

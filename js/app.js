@@ -228,7 +228,20 @@ function update(){
     }
     S.content = out;
     try{
-      box.innerHTML = buildSvg(out, S.style, {rounded:true});
+      const svg = buildSvg(out, S.style, {rounded:true});
+      // نعرضه كصورة حقيقية حتى تظهر خيارات «نسخ الصورة» و«حفظ الصورة» بالزر الأيمن أو بالضغط المطوّل
+      const img = document.createElement('img');
+      img.alt = 'رمز QR'; img.draggable = true;
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      box.replaceChildren(img);
+      const token = (update._token = (update._token || 0) + 1);
+      svgToPngBlob(buildSvg(out, S.style)).then(blob => {
+        if(token !== update._token) return; // تغيّر المحتوى أثناء التحويل
+        if(update._url) URL.revokeObjectURL(update._url);
+        update._url = URL.createObjectURL(blob);
+        update._blob = blob;
+        img.src = update._url;
+      }).catch(()=>{});
     }catch(e){
       box.innerHTML = `<div class="empty"><p>المحتوى طويل جداً لرمز واحد. اختصر النص.</p></div>`;
       S.content = ''; setActions(false); return;
@@ -244,7 +257,7 @@ function update(){
     setActions(true);
   });
 }
-function setActions(on){ ['shareBtn','pngBtn','svgBtn'].forEach(id => $(id).disabled = !on); }
+function setActions(on){ ['shareBtn','copyBtn','pngBtn','svgBtn'].forEach(id => $(id).disabled = !on); }
 
 $('types').addEventListener('click', e=>{
   const b = e.target.closest('[data-t]'); if(!b) return;
@@ -338,6 +351,15 @@ $('pngBtn').addEventListener('click', async ()=>{
   if(!S.content) return;
   try{ download(await svgToPngBlob(currentSvg()), fileBase() + '.png'); addHistory(); toast('تم تنزيل الصورة'); }
   catch(e){ toast('تعذر إنشاء الصورة', true); }
+});
+$('copyBtn').addEventListener('click', async ()=>{
+  if(!S.content) return;
+  try{
+    if(!window.ClipboardItem || !navigator.clipboard?.write) throw new Error('unsupported');
+    // نمرر وعداً للصورة حتى يقبله Safari ضمن نفس الضغطة
+    await navigator.clipboard.write([new ClipboardItem({'image/png': svgToPngBlob(currentSvg())})]);
+    addHistory(); toast('نُسخت الصورة، الصقها حيث تريد');
+  }catch(e){ toast('النسخ غير مدعوم في هذا المتصفح. استخدم الزر الأيمن على الصورة أو التنزيل.', true); }
 });
 $('svgBtn').addEventListener('click', ()=>{
   if(!S.content) return;
